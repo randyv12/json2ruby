@@ -1,6 +1,7 @@
 require 'digest/md5'
 require 'json'
 require 'optparse'
+require 'DAG'
 
 module JSON2Ruby
 
@@ -128,15 +129,27 @@ module JSON2Ruby
 
       rootclasses = []
 
+      dep_graph = {}
+
       ARGV.each do |filename|
         filename = File.expand_path(filename)
+        dag = DAG.new
         puts "Processing: #{filename}" if options[:verbose]
 
         file = File.read(filename)
         data_hash = JSON.parse(file)
 
-        rootclasses << Entity.parse_from(File.basename(filename,'.*'), data_hash, options)
+        rootclasses << Entity.parse_from(File.basename(filename,'.*'), data_hash, dag, options)
+
+        dag.vertices.each_with_index do |v, _|
+
+          if v.successors.size > 0
+            dep_graph[v.payload[:name]] = v.successors.map{|e| e.payload[:name]}
+          end
+        end
       end
+
+      puts JSON.pretty_generate(dep_graph)
 
       rootclasses
     end

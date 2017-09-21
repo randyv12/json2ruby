@@ -27,11 +27,11 @@ module JSON2Ruby
     # * :forcenumeric => true - Use RUBYNUMERIC instead of RUBYINTEGER / RUBYFLOAT.
     #
     # Note: Contained JSON Objects and Arrays will be recursively parsed into Entity and Collection instances.
-    def self.parse_from(name, obj_array, options = {})
+    def self.parse_from(name, obj_array, dag, options = {})
       ob = self.new(name)
       obj_array.each do |v|
         if v.kind_of?(Array)
-          arr = Collection.parse_from(name.singularize, v, options)
+          arr = Collection.parse_from(name.singularize, v, dag, options)
           ob.ruby_types[arr.attr_hash] = arr
         elsif v.kind_of?(String)
           ob.ruby_types[RUBYSTRING.attr_hash] = RUBYSTRING
@@ -44,7 +44,7 @@ module JSON2Ruby
         elsif !!v==v
           ob.ruby_types[RUBYBOOLEAN.attr_hash] = RUBYBOOLEAN
         elsif v.kind_of?(Hash)
-          ent = Entity.parse_from(name.singularize, v, options)
+          ent = Entity.parse_from(name.singularize, v, dag, options)
           ob.ruby_types[ent.attr_hash] = ent
         elsif (v == nil)
           ob.ruby_types[RUBYNIL.attr_hash] = RUBYNIL

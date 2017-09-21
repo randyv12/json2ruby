@@ -53,12 +53,18 @@ module JSON2Ruby
       @@unknowncount = 0
     end
 
+    def self.find_v(dag, name)
+      verts = dag.vertices.select{|v| v.payload[:name] == name}
+      e = verts.blank? ? dag.add_vertex({name: name}) : verts.first
+      e
+    end
+
     # Create a new, or return an existing, Entity named name that supports all fields in obj_hash.
     # Optionally, options can be supplied:
     # * :forcenumeric => true - Use RUBYNUMERIC instead of RUBYINTEGER / RUBYFLOAT.
     #
     # Note: Contained JSON Objects and Arrays will be recursively parsed into Entity and Collection instances.
-    def self.parse_from(name, obj_hash, options = {})
+    def self.parse_from(name, obj_hash, dag,options = {})
       ob = self.new(name)
       obj_hash.each do |k,v|
 
@@ -66,7 +72,17 @@ module JSON2Ruby
         k = k.gsub(/[^A-Za-z0-9_]/, "_")
 
         if v.kind_of?(Array)
-          att = Collection.parse_from(k.singularize, v, options)
+          v1 = self.find_v(dag,name)
+          v2 = self.find_v(dag,k)
+
+          begin
+            dag.add_edge from: v1, to: v2
+          rescue
+
+          end
+          
+          att = Collection.parse_from(k.singularize, v, dag, options)
+
         elsif v.kind_of?(String)
           att = RUBYSTRING
         elsif v.kind_of?(Integer) && !options[:forcenumeric]
@@ -78,7 +94,17 @@ module JSON2Ruby
         elsif !!v==v
           att = RUBYBOOLEAN
         elsif v.kind_of?(Hash)
-          att = self.parse_from(k.singularize, v, options)
+
+          v1 = self.find_v(dag,name)
+          v2 = self.find_v(dag,k.singularize)
+
+          begin
+            dag.add_edge from: v1, to: v2
+          rescue
+
+          end
+
+          att = self.parse_from(k.singularize, v, dag,options)
         elsif v==nil
           att = RUBYNIL
         end
