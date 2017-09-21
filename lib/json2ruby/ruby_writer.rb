@@ -1,6 +1,7 @@
 require 'digest/md5'
 require 'json'
 require 'optparse'
+require 'active_support/all'
 
 module JSON2Ruby
   # The RubyWriter class contains methods to output ruby code from a given Entity.
@@ -36,9 +37,11 @@ module JSON2Ruby
         options[:include].each { |r| x += "#{(' '*(indent+2))}include #{r}\r\n" }
         x += "\r\n"
       end
+      x += "\r\n"
       x += attributes_to_ruby(entity, indent+2, options)
       x += "\r\n"
       x += attributes_to_constructor(entity, indent+2, options)
+      x += "\r\n"
       x += "#{(' '*indent)}end\r\n"
       x
     end
@@ -57,13 +60,17 @@ module JSON2Ruby
       attrs = []
       entity.attributes.each do |k,v|
 
-        if !attrs.include? ":#{k}"
-          attrs << ":#{k}"
+        attr_name = k.underscore
+
+        if !attrs.include? ":#{attr_name}"
+          attrs << ":#{attr_name}"
         end
 
       end
 
-      x += attrs.join(", ")
+      attr_string = apply_margins(attrs, x)
+
+      x += attr_string
       x += "\r\n"
       x
     end
@@ -73,20 +80,44 @@ module JSON2Ruby
       constructor = "#{ident}def initialize("
 
       attrs = []
-      ats = "\r\n"
+      ats = []
       entity.attributes.each do |k,v|
 
-        attrs << "#{k}:"
+        attr_name = k.underscore
 
-        ats += "#{ident}#{ident}@#{k} = #{k}\r\n"
+        attrs << "#{attr_name}:"
+
+        ats << "@#{attr_name} = #{attr_name}"
+
       end
-      constructor += attrs.join(", ")
+
+      attr_string = apply_margins(attrs, constructor)
+
+      constructor += attr_string
       constructor += ")"
       constructor += "\r\n"
-      constructor += ats
+      constructor += "\r\n"
+      constructor += "#{ats.map{|at| "#{ident}  #{at}"}.join("\r\n")}"
       constructor += "\r\n"
       constructor += "#{ident}end\r\n"
       constructor
+    end
+
+    def self.apply_margins(attrs, constructor)
+      attr_string = ""
+      curr = ""
+
+      for str in attrs do
+        curr += str
+        if (curr.size + str.size + constructor.size) > 90
+          attr_string += "\r\n#{' '*constructor.size}"
+          curr = ''
+        end
+        attr_string += str + ', '
+
+      end
+
+      attr_string = attr_string.sub(/, $/, '')
     end
   end
 end
