@@ -119,6 +119,7 @@ module JSON2Ruby
       options
     end
 
+
     # Parse all JSON files in ARGV and build the Entity cache, using the supplied options Hash.
     def self.parse_files(options)
       # Reset the object cache
@@ -131,9 +132,10 @@ module JSON2Ruby
 
       dep_graph = {}
 
+      dag = JSON2Ruby::Entity.dag
+
       ARGV.each do |filename|
         filename = File.expand_path(filename)
-        dag = DAG.new
         puts "Processing: #{filename}" if options[:verbose]
 
         file = File.read(filename)
@@ -141,15 +143,17 @@ module JSON2Ruby
 
         rootclasses << Entity.parse_from(File.basename(filename,'.*'), data_hash, dag, options)
 
-        dag.vertices.each_with_index do |v, _|
 
-          if v.successors.size > 0
-            dep_graph[v.payload[:name]] = v.successors.map{|e| e.payload[:name]}
-          end
+      end
+      dag.vertices.each_with_index do |v, _|
+
+        if v.successors.size > 0
+          dep_graph[v.payload[:name]] = v.successors.map{|e| {e.payload[:name] => e.payload[:attrs]}} << { 'self' => v.payload[:attrs] }
+        else
+          dep_graph[v.payload[:name]] = v.payload[:attrs]
         end
       end
-
-      puts JSON.pretty_generate(dep_graph)
+      #puts JSON.pretty_generate(dep_graph)
 
       rootclasses
     end

@@ -1,4 +1,5 @@
 require 'digest/md5'
+require 'dag'
 
 module JSON2Ruby
   # Entity represents a JSON Object.
@@ -15,10 +16,15 @@ module JSON2Ruby
       "Entity"
     end
 
+    def self.dag
+      @@DAG ||= DAG.new
+    end
+
     # Create a new Entity with the specified name and optional Hash of attributes (String name to Entity, Collection or Primitive instances)
     def initialize(name, attributes = {})
       @name = name
       @attributes = attributes
+
     end
 
     # Return a 128-bit hash as a hex string, representative of the unique set of fields and their types, including all subobjects.
@@ -53,9 +59,11 @@ module JSON2Ruby
       @@unknowncount = 0
     end
 
-    def self.find_v(dag, name)
+    def self.find_v(dag, name, attrs)
+
       verts = dag.vertices.select{|v| v.payload[:name] == name}
       e = verts.blank? ? dag.add_vertex({name: name}) : verts.first
+
       e
     end
 
@@ -72,15 +80,18 @@ module JSON2Ruby
         k = k.gsub(/[^A-Za-z0-9_]/, "_")
 
         if v.kind_of?(Array)
-          v1 = self.find_v(dag,name)
-          v2 = self.find_v(dag,k)
+
+
+          v1 = self.find_v(dag,name,[])
+          v2 = self.find_v(dag,k,[])
+
 
           begin
             dag.add_edge from: v1, to: v2
           rescue
 
           end
-          
+
           att = Collection.parse_from(k.singularize, v, dag, options)
 
         elsif v.kind_of?(String)
@@ -95,8 +106,11 @@ module JSON2Ruby
           att = RUBYBOOLEAN
         elsif v.kind_of?(Hash)
 
-          v1 = self.find_v(dag,name)
-          v2 = self.find_v(dag,k.singularize)
+
+          v_keys = v.keys
+
+          v1 = self.find_v(dag, name, [])
+          v2 = self.find_v(dag,k.singularize, [])
 
           begin
             dag.add_edge from: v1, to: v2

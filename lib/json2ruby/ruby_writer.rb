@@ -54,6 +54,18 @@ module JSON2Ruby
     # * :includetypes - Boolean if true, include the string of the Attribute type as a second parameter to the definition call.
     # * :namespace - String, the namespace of the type classes in the format 'Module::SubModule'...
     def self.attributes_to_ruby(entity, indent = 0, options = {})
+
+      dag = JSON2Ruby::Entity.dag
+      verts = dag.vertices.select{|v| v.payload[:name] == entity.name}
+      e = verts.blank? ? dag.add_vertex({name: name}) : verts.first
+
+      foo = []
+      entity.attributes.each do |k,v|
+        foo << k
+      end
+
+      e.payload[:attrs] = foo
+
       ident = (' '*indent)
       x = "#{ident}attr_accessor "
 
