@@ -85,7 +85,14 @@ module JSON2Ruby
 
         attr_name = k.underscore
 
-        attrs << "#{attr_name}:"
+        e = ''
+        if v.kind_of?(Collection)
+          e = '[]'
+        end
+
+
+        attrs << "#{attr_name}:#{e}"
+
 
         ats << "@#{attr_name} = #{attr_name}"
 
