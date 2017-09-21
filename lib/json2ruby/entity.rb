@@ -66,7 +66,7 @@ module JSON2Ruby
         k = k.gsub(/[^A-Za-z0-9_]/, "_")
 
         if v.kind_of?(Array)
-          att = Collection.parse_from(k, v, options)
+          att = Collection.parse_from(k.singularize, v, options)
         elsif v.kind_of?(String)
           att = RUBYSTRING
         elsif v.kind_of?(Integer) && !options[:forcenumeric]
@@ -78,8 +78,11 @@ module JSON2Ruby
         elsif !!v==v
           att = RUBYBOOLEAN
         elsif v.kind_of?(Hash)
-          att = self.parse_from(k, v, options)
+          att = self.parse_from(k.singularize, v, options)
+        elsif v==nil
+          att = RUBYNIL
         end
+
         att.original_name = orig if orig != k
         ob.attributes[k] = att
       end

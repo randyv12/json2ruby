@@ -163,7 +163,7 @@ module JSON2Ruby
             out += (' '*indent)+"end\r\n"
           end
 
-          filename = options[:outputdir]+"/#{v.name}.rb"
+          filename = options[:outputdir]+"/#{self.underscore(v.name.to_s)}.rb"
           if File.exists?(filename) && !options[:forceoverwrite]
             $stderr.puts "File #{filename} exists. Use -f to overwrite."
           else
@@ -177,6 +177,10 @@ module JSON2Ruby
       puts "Done, Generated #{files} file#{files==1 ? '' : 's'}"
     end
 
+    def self.underscore(s)
+      s.gsub(/::/, '/').gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').gsub(/([a-z\d])([A-Z])/,'\1_\2').tr("-", "_").downcase
+    end
+
     # Display the Entity supplied in ent with the supplied hash value hsh to STDOUT  
     def self.display_entity(hsh, ent)
       puts "- #{ent.name} (#{ent.class.short_name} - #{hsh})"
@@ -188,3 +192,4 @@ module JSON2Ruby
     end
   end
 end
+

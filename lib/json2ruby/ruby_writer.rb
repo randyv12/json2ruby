@@ -5,6 +5,11 @@ require 'optparse'
 module JSON2Ruby
   # The RubyWriter class contains methods to output ruby code from a given Entity.
   class RubyWriter
+
+    def self.camel_case(s)
+      return s if s !~ /_/ && s =~ /[A-Z]+.*/
+      s.split('_').map{|e| e.capitalize}.join
+    end
     # Return a String containing a Ruby class/module definition for the given Entity.
     # Optionally, supply indent to set the indent of the generated code in spaces,
     # and supply a Hash of options as follows:
@@ -20,7 +25,7 @@ module JSON2Ruby
         x += "\r\n"
       end
       idt = (' '*indent)
-      x += "#{(' '*indent)}#{options[:modules] ? "module" : "class"} #{entity.name}"
+      x += "#{(' '*indent)}#{options[:modules] ? "module" : "class"} #{self.camel_case(entity.name)}"
       x += " < #{options[:superclass_name]}" if options.has_key?(:superclass_name)
       x += "\r\n"
       if options.has_key?(:extend)
@@ -32,6 +37,8 @@ module JSON2Ruby
         x += "\r\n"
       end
       x += attributes_to_ruby(entity, indent+2, options)
+      x += "\r\n"
+      x += attributes_to_constructor(entity, indent+2, options)
       x += "#{(' '*indent)}end\r\n"
       x
     end
@@ -45,22 +52,41 @@ module JSON2Ruby
     # * :namespace - String, the namespace of the type classes in the format 'Module::SubModule'...
     def self.attributes_to_ruby(entity, indent = 0, options = {})
       ident = (' '*indent)
-      x = ""
+      x = "#{ident}attr_accessor "
+
+      attrs = []
       entity.attributes.each do |k,v|
-        if (v.is_a?(Collection))
-          x += "#{ident}#{options[:collectionmethod]} :#{k}"
-        else
-          x += "#{ident}#{options[:attributemethod]} :#{k}"
+
+        if !attrs.include? ":#{k}"
+          attrs << ":#{k}"
         end
-        if options[:includetypes]
-          unless v.is_a?(Primitive)
-            name = !options[:namespace].nil? && options[:namespace]!="" ? (options[:namespace]+"::"+v.name) : v.name
-            x += ", '#{name}'"
-          end
-        end
-        x += " # #{v.comment}\r\n"
+
       end
+
+      x += attrs.join(", ")
+      x += "\r\n"
       x
+    end
+
+    def self.attributes_to_constructor(entity, indent = 0, options = {})
+      ident = (' '*indent)
+      constructor = "#{ident}def initialize("
+
+      attrs = []
+      ats = "\r\n"
+      entity.attributes.each do |k,v|
+
+        attrs << "#{k}:"
+
+        ats += "#{ident}#{ident}@#{k} = #{k}\r\n"
+      end
+      constructor += attrs.join(", ")
+      constructor += ")"
+      constructor += "\r\n"
+      constructor += ats
+      constructor += "\r\n"
+      constructor += "#{ident}end\r\n"
+      constructor
     end
   end
 end

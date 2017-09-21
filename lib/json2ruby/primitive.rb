@@ -40,4 +40,6 @@ module JSON2Ruby
   RUBYBOOLEAN = Primitive.new("Boolean","0123456789ABCDEF0123456789ABCDE2")
   # Psuedo-Primitive Representing a Numeric
   RUBYNUMERIC = Primitive.new("Numeric","0123456789ABCDEF0123456789ABCDE3")
+  # WTF
+  RUBYNIL = Primitive.new("Nil","0123456789ABCDEF0123456789ABCDE4")
 end
