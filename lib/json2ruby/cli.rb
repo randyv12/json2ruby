@@ -166,7 +166,7 @@ module JSON2Ruby
           end
 
           dep_graph[v[:name]] = self.to_attributes(v).merge(successor_as_attrs)
-          puts dep_graph[v[:name]].keys.to_json if v[:name] == "Address"
+
         else
           dep_graph[v[:name]] = self.to_attributes(v)
         end

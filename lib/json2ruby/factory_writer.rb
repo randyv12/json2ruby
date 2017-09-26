@@ -16,10 +16,9 @@ module JSON2Ruby
       todos = self.to_do
 
       JSON2Ruby::Entity.entities.keys.each do |k|
-        todos << JSON2Ruby::Entity.entities[k].name
-      end
 
-      puts todos.to_json
+        todos << JSON2Ruby::Entity.entities[k].name unless JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Primitive)
+      end
 
       # return if !dependency_graph[entity]
       # dependency_graph[entity].each do |ent, v|
@@ -140,10 +139,9 @@ module JSON2Ruby
       all_keys.uniq!
 
 
-
       create_string = "#{entity}.new(#{self.create_stuff(all_keys, factory_keys).join(",")})"
       attr_string = self.apply_margins(attrs, x)
-      needed_factory_string = needed_factories.join("\r\n#{" "*2*indent}")
+      needed_factory_string = needed_factories.to_a.join("\r\n#{" "*2*indent}")
 
       x += attr_string
 
