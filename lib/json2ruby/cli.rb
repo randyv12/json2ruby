@@ -7,6 +7,12 @@ module JSON2Ruby
 
   # The CLI (Command Line Interface) functionality class for the json2ruby executable
   class CLI
+
+    def self.dep_graph
+      @@DEP_GRAPH ||= {}
+    end
+
+
     # Run the json2ruby command, using arguments in ARGV.
     def self.run
 
@@ -102,6 +108,10 @@ module JSON2Ruby
         opts.on("-v", "--verbose", "Verbose") do |v|
           options[:verbose] = v
         end
+
+        opts.on("-g", "--buildClass class", "class builder") do |v|
+          options[:build] = v
+        end
       end.parse!
 
       # Defaults
@@ -130,7 +140,7 @@ module JSON2Ruby
 
       rootclasses = []
 
-      dep_graph = {}
+      dep_graph = self.dep_graph
 
       dag = JSON2Ruby::Entity.dag
 
@@ -161,7 +171,6 @@ module JSON2Ruby
         end
       end
 
-      puts JSON.pretty_generate(dep_graph)
 
       rootclasses
     end
@@ -202,9 +211,23 @@ module JSON2Ruby
         end
       end
 
+      if !self.dep_graph[options[:build]].blank?
+        puts JSON.pretty_generate(self.dep_graph[options[:build]])
+        filename = options[:outputdir]+"/#{self.underscore(options[:build])}_factory.rb"
+        factory_out = JSON2Ruby::FactoryWriter.to_code(options[:build], self.dep_graph, 0, options)
+        if File.exists?(filename) && !options[:forceoverwrite]
+          $stderr.puts "File #{filename} exists. Use -f to overwrite."
+        else
+          File.write(filename, factory_out)
+          files += 1
+        end
+      end
+
       # Done
       puts "Done, Generated #{files} file#{files==1 ? '' : 's'}"
     end
+
+
 
     def self.underscore(s)
       s.gsub(/::/, '/').gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').gsub(/([a-z\d])([A-Z])/,'\1_\2').tr("-", "_").downcase
