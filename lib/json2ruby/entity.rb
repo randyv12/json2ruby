@@ -31,9 +31,12 @@ module JSON2Ruby
     # Internally, this is calculated as the MD5 of all field names and their type attr_hash calls.
     def attr_hash
       md5 = Digest::MD5.new
-      @attributes.each do |k,v|
-        md5.update "#{k}:#{v.attr_hash}"
-      end
+      # just hash it by name
+      md5.update @name
+
+      # @attributes.each do |k,v|
+      #   md5.update "#{k}:#{v.attr_hash}"
+      # end
       md5.hexdigest
     end
 
@@ -61,8 +64,12 @@ module JSON2Ruby
 
     def self.find_v(dag, name, attrs)
 
+      md5 = Digest::MD5.new
+      # just hash it by name
+      md5.update name
+
       verts = dag.vertices.select{|v| v.payload[:name] == name}
-      e = verts.blank? ? dag.add_vertex({name: name}) : verts.first
+      e = verts.blank? ? dag.add_vertex({name: name, md5: md5.hexdigest}) : verts.first
 
       e
     end
@@ -92,7 +99,7 @@ module JSON2Ruby
 
           end
 
-          att = Collection.parse_from(k.singularize, v, dag, options)
+          att = Collection.parse_from(k, v, dag, options)
 
         elsif v.kind_of?(String)
           att = RUBYSTRING
@@ -110,7 +117,7 @@ module JSON2Ruby
           v_keys = v.keys
 
           v1 = self.find_v(dag, name, [])
-          v2 = self.find_v(dag,k.singularize, [])
+          v2 = self.find_v(dag,k, [])
 
           begin
             dag.add_edge from: v1, to: v2
@@ -118,7 +125,7 @@ module JSON2Ruby
 
           end
 
-          att = self.parse_from(k.singularize, v, dag,options)
+          att = self.parse_from(k, v, dag,options)
         elsif v==nil
           att = RUBYNIL
         end
@@ -128,9 +135,17 @@ module JSON2Ruby
       end
 
       x = ob.attr_hash
-      return @@objs[x] if @@objs.has_key?(x)
-      @@objs[x] = ob
-      ob
+      if @@objs.has_key?(x)
+        # merge previous attr hashes
+        existing_object = @@objs[x]
+        existing_object.attributes.merge!(ob.attributes)
+
+        return @@objs[x]
+      else
+        @@objs[x] = ob
+        return ob
+      end
+
     end
 
     # Return the type cache of all Entity objects.

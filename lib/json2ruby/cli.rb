@@ -148,14 +148,26 @@ module JSON2Ruby
       dag.vertices.each_with_index do |v, _|
 
         if v.successors.size > 0
-          dep_graph[v.payload[:name]] = v.successors.map{|e| {e.payload[:name] => e.payload[:attrs]}} << { 'self' => v.payload[:attrs] }
+          successor_as_attrs = {}
+
+          v.successors.each do |e|
+            successor_as_attrs[e.payload[:name]] = self.to_attributes(e)
+          end
+
+
+          dep_graph[v.payload[:name]] = successor_as_attrs.merge(self.to_attributes(v))
         else
-          dep_graph[v.payload[:name]] = v.payload[:attrs]
+          dep_graph[v.payload[:name]] = self.to_attributes(v)
         end
       end
-      #puts JSON.pretty_generate(dep_graph)
+
+      puts JSON.pretty_generate(dep_graph)
 
       rootclasses
+    end
+
+    def self.to_attributes(v)
+      Entity.entities.has_key?(v.payload[:md5]) ? Entity.entities[v.payload[:md5]].attributes : nil
     end
 
     # Write out all types in the Entity cache, except primitives and those contained in the 
