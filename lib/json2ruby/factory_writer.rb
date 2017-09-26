@@ -11,13 +11,13 @@ module JSON2Ruby
       @@TODO ||= []
     end
 
-    def self.digest(entity, dependency_graph)
+    def self.digest(entity, dependency_graph, dag)
 
       todos = self.to_do
 
       JSON2Ruby::Entity.entities.keys.each do |k|
 
-        todos << JSON2Ruby::Entity.entities[k].name unless JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Primitive)
+        todos << JSON2Ruby::Entity.entities[k].name if (!JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Primitive))
       end
 
       # return if !dependency_graph[entity]
@@ -115,24 +115,31 @@ module JSON2Ruby
             dag.add_edge from: v1, to: v2
 
             dependency_graph[entity].each do |key,v|
+
               if v.is_a?(Hash)
                 if v[:relation] == "has_many"
-                  factory_str = "#{key.underscore} = #{key}.map{|item| #{key}Factory.build(item)}"
-                  needed_factories << factory_str if !needed_factories.include?(factory_str)
-                  factory_keys << key.underscore
-                  all_keys << key
-                elsif v[:relation] == "has_one"
-                  factory_str = "#{key.underscore} = #{key}Factory.build(#{key})"
+
+                  if !v[:relational_attrs].blank?
+                    factory_str = "#{key.underscore} = #{key}.map{|item| #{key.camelcase}Factory.build(item)}"
+                    needed_factories << factory_str if !needed_factories.include?(factory_str)
+                    factory_keys << key.underscore
+                    all_keys << key
+                  end
+
+                elsif v[:relation] == "has_one" && !v[:relational_attrs].blank?
+                  factory_str = "#{key.underscore} = #{key.camelcase}Factory.build(#{key})"
                   needed_factories << factory_str if !needed_factories.include?(factory_str)
                   factory_keys << key.underscore
                   all_keys << key
                 end
+
               end
             end
-
           rescue
-
           end
+        else
+          #puts v
+          #puts 'whatis key'
         end
 
       end

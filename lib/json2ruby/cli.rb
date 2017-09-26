@@ -219,7 +219,7 @@ module JSON2Ruby
 
         dag = JSON2Ruby::Entity.dag
 
-        JSON2Ruby::FactoryWriter.digest(options[:build], dep_graph)
+        JSON2Ruby::FactoryWriter.digest(options[:build], dep_graph, dag)
         JSON2Ruby::FactoryWriter.to_do << options[:build]
 
 
