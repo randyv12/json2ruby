@@ -139,7 +139,7 @@ module JSON2Ruby
       all_keys.uniq!
 
 
-      create_string = "#{entity}.new(#{self.create_stuff(all_keys, factory_keys).join(",")})"
+      create_string = "#{entity}.new(#{self.create_stuff(all_keys, factory_keys).join(",")}\r\n#{" "*4})"
       attr_string = self.apply_margins(attrs, x)
       needed_factory_string = needed_factories.to_a.join("\r\n#{" "*2*indent}")
 
@@ -163,7 +163,7 @@ module JSON2Ruby
     def self.create_stuff(keys, factory_keys)
       f = []
       for key in keys do
-        f << "#{key.underscore}: #{key.underscore}"
+        f << "\r\n#{" "*6}#{key.underscore}:#{key.underscore}"
 
       end
       f
