@@ -139,7 +139,7 @@ module JSON2Ruby
       all_keys.uniq!
 
 
-      create_string = "#{entity}.new(#{self.create_stuff(all_keys, factory_keys).join(",")}\r\n#{" "*4})"
+      create_string = "#{entity.camelcase}.new(#{self.create_stuff(all_keys, factory_keys).join(",")}\r\n#{" "*4})"
       attr_string = self.apply_margins(attrs, x)
       needed_factory_string = needed_factories.to_a.join("\r\n#{" "*2*indent}")
 
