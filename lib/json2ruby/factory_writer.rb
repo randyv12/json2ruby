@@ -17,7 +17,10 @@ module JSON2Ruby
 
       JSON2Ruby::Entity.entities.keys.each do |k|
 
-        todos << JSON2Ruby::Entity.entities[k].name if (!JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Primitive))
+        is_string = JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Collection) && JSON2Ruby::Entity.entities[k].ruby_types.keys.include?("0123456789ABCDEF0123456789ABCDEF")
+
+        todos << JSON2Ruby::Entity.entities[k].name if (!JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Primitive) && !is_string)
+
       end
 
       # return if !dependency_graph[entity]
