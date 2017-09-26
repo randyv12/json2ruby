@@ -26,6 +26,7 @@ module JSON2Ruby
         x += "\r\n"
       end
       idt = (' '*indent)
+
       x += "#{(' '*indent)}#{options[:modules] ? "module" : "class"} #{self.camel_case(entity.name).upcase_first}"
       x += " < #{options[:superclass_name]}" if options.has_key?(:superclass_name)
       x += "\r\n"

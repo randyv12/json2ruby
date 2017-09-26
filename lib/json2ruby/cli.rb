@@ -225,7 +225,18 @@ module JSON2Ruby
 
         JSON2Ruby::FactoryWriter.to_do.each do |todo|
           filename = options[:outputdir]+"/#{self.underscore(todo)}_factory.rb"
-          factory_out = JSON2Ruby::FactoryWriter.to_code(todo, self.dep_graph, 0, options, dag)
+          factory_out = ""
+          indent = 0
+          options[:modulenames].each do |v|
+            factory_out += (' '*indent)+"module #{v}\r\n"
+            indent += 2
+          end
+          factory_out += JSON2Ruby::FactoryWriter.to_code(todo, self.dep_graph, indent, options, dag)
+          while indent>0
+            indent -= 2
+            factory_out += (' '*indent)+"end\r\n"
+          end
+
           if File.exists?(filename) && !options[:forceoverwrite]
             $stderr.puts "File #{filename} exists. Use -f to overwrite."
           else
