@@ -15,30 +15,35 @@ module JSON2Ruby
 
       todos = self.to_do
 
-      dependency_graph[entity].each do |ent, v|
-
-        if v.is_a?(Hash) && !v[:relation].blank? && v[:relation] == "has_one"
-
-
-          v[:relational_attrs].each do |name, e|
-            if !e.is_a?(JSON2Ruby::Primitive)
-              todos << name
-
-              self.digest(name, dependency_graph)
-            end
-          end
-
-        end
-
-        if v.is_a?(Hash) && !v[:relation].blank? && v[:relation] == "has_many"
-
-          if !e.is_a?(JSON2Ruby::Primitive)
-            todos << name
-            self.digest(name, dependency_graph)
-          end
-
-        end
+      JSON2Ruby::Entity.entities.keys.each do |k|
+        todos << JSON2Ruby::Entity.entities[k].name
       end
+
+      puts todos.to_json
+
+      # return if !dependency_graph[entity]
+      # dependency_graph[entity].each do |ent, v|
+      #
+      #   if v.is_a?(JSON2Ruby::Collection) && v[:relation]
+      #
+      #     v[:relational_attrs].each do |rr, v|
+      #       if !v.is_a?(JSON2Ruby::Primitive)
+      #
+      #         todos << rr
+      #         self.digest(rr, dependency_graph)
+      #       end
+      #
+      #     end
+      #   end
+      #
+      #
+      #   if v.is_a?(JSON2Ruby::Entity) && v[:relation]
+      #
+      #     todos << rr
+      #     self.digest(ent, dependency_graph)
+      #
+      #   end
+      # end
 
 
       todos
@@ -58,7 +63,7 @@ module JSON2Ruby
     # * :superclass_name - String, if supplied, the superclass of the class to geneerate
     # * :extend - Array of String items, each of which will generate a `extend '<x>'` statement for each item in the class
     # * :include - Array of String items, each of which will generate a `include '<x>'` statement for each item in the class
-    def self.to_code(entity, dependency_graph, indent = 0, options = {})
+    def self.to_code(entity, dependency_graph, indent, options, dag)
       x = ""
       if options.has_key?(:require)
         options[:require].each { |r| x += "require '#{r}'\r\n" }
@@ -70,15 +75,18 @@ module JSON2Ruby
       x += "\r\n"
 
 
-      attributes = JSON2Ruby::Entity.entities[JSON2Ruby::Entity.get_md5(entity)].attributes
-      # puts attributes.keys.to_json
+      begin
+        attributes = JSON2Ruby::Entity.entities[JSON2Ruby::Entity.get_md5(entity)].attributes
+      rescue
+        attributes = []
+      end
 
-      x += attributes_to_ruby(entity, indent+2, attributes.keys,dependency_graph)
+      x += attributes_to_ruby(entity, indent+2, attributes,dependency_graph, dag)
       x += "#{(' '*indent)}end\r\n"
       x
     end
 
-    def self.attributes_to_ruby(entity, indent, attributes, dependency_graph)
+    def self.attributes_to_ruby(entity, indent, attributes, dependency_graph, dag)
 
       x = "#{" "*indent}def self.build("
 
@@ -92,9 +100,31 @@ module JSON2Ruby
           attrs << "#{attr_name}:"
         end
 
-        # if dependency_graph[k].is_a?(Hash)
-        #   needed_factories << "@#{k.underscore} = #{k}Factory.build(#{k})"
-        # end
+        if dependency_graph[entity].is_a?(Hash)
+
+          v1 = JSON2Ruby::Entity.find_v(dag, entity, {})
+          v2 = JSON2Ruby::Entity.find_v(dag, k, {})
+
+          begin
+
+            dag.add_edge from: v1, to: v2
+
+            dependency_graph[entity].each do |key,v|
+              if v.is_a?(Hash)
+                if v[:relation] == "has_many"
+                  factory_str = "#{key.pluralize.underscore} = #{key}.map{|item| #{key}Factory.build(item)}"
+                  needed_factories << factory_str if !needed_factories.include?(factory_str)
+                elsif v[:relation] == "has_one"
+                  factory_str = "#{key.pluralize.underscore} = #{key}Factory.build(#{key})"
+                  needed_factories << factory_str if !needed_factories.include?(factory_str)
+                end
+              end
+            end
+
+          rescue
+
+          end
+        end
 
       end
 
