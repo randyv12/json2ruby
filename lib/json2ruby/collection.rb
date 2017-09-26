@@ -44,7 +44,7 @@ module JSON2Ruby
         elsif !!v==v
           ob.ruby_types[RUBYBOOLEAN.attr_hash] = RUBYBOOLEAN
         elsif v.kind_of?(Hash)
-          ent = Entity.parse_from(name, v, dag, options)
+          ent = Entity.parse_from(name, v, dag, options, false)
           ob.ruby_types[ent.attr_hash] = ent
         elsif (v == nil)
           ob.ruby_types[RUBYNIL.attr_hash] = RUBYNIL
@@ -53,7 +53,6 @@ module JSON2Ruby
       end
 
       x = ob.attr_hash
-      return Entity.entities[x] if Entity.entities.has_key?(x)
       Entity.entities[x] = ob
       ob
     end

@@ -151,32 +151,48 @@ module JSON2Ruby
         file = File.read(filename)
         data_hash = JSON.parse(file)
 
-        rootclasses << Entity.parse_from(File.basename(filename,'.*'), data_hash, dag, options)
+        rootclasses << Entity.parse_from(File.basename(filename,'.*'), data_hash, dag, options, true)
 
 
       end
       dag.vertices.each_with_index do |v, _|
 
+        # if v.successors.size > 0
+        #   successor_as_attrs = {}
+        #
+        #   v.successors.each do |e|
+        #     successor_as_attrs[e.payload[:name]] = self.to_attributes(e)
+        #   end
+        #
+        #
+        #   dep_graph[v.payload[:name]] = successor_as_attrs.merge(self.to_attributes(v))
+        # else
+        #   dep_graph[v.payload[:name]] = self.to_attributes(v)
+        # end
         if v.successors.size > 0
           successor_as_attrs = {}
 
-          v.successors.each do |e|
-            successor_as_attrs[e.payload[:name]] = self.to_attributes(e)
+          v.outgoing_edges.each do |e|
+
+            successor_as_attrs[e.destination[:name]] = {relational_attrs: self.to_attributes(e.destination), relation: e[:properties][:type]}
           end
 
 
-          dep_graph[v.payload[:name]] = successor_as_attrs.merge(self.to_attributes(v))
+          dep_graph[v[:name]] = self.to_attributes(v)#.merge(successor_as_attrs)
         else
-          dep_graph[v.payload[:name]] = self.to_attributes(v)
+          dep_graph[v[:name]] = self.to_attributes(v)
         end
       end
+
+
 
 
       rootclasses
     end
 
     def self.to_attributes(v)
-      Entity.entities.has_key?(v.payload[:md5]) ? Entity.entities[v.payload[:md5]].attributes : nil
+
+      Entity.entities.has_key?(v[:md5]) ? Entity.entities[v[:md5]].attributes.dup : nil
     end
 
     # Write out all types in the Entity cache, except primitives and those contained in the 
@@ -212,15 +228,22 @@ module JSON2Ruby
       end
 
       if !self.dep_graph[options[:build]].blank?
-        puts JSON.pretty_generate(self.dep_graph[options[:build]])
-        filename = options[:outputdir]+"/#{self.underscore(options[:build])}_factory.rb"
-        factory_out = JSON2Ruby::FactoryWriter.to_code(options[:build], self.dep_graph, 0, options)
-        if File.exists?(filename) && !options[:forceoverwrite]
-          $stderr.puts "File #{filename} exists. Use -f to overwrite."
-        else
-          File.write(filename, factory_out)
-          files += 1
+
+
+        JSON2Ruby::FactoryWriter.digest(options[:build], dep_graph)
+        JSON2Ruby::FactoryWriter.to_do << options[:build]
+
+        JSON2Ruby::FactoryWriter.to_do.each do |todo|
+          filename = options[:outputdir]+"/#{self.underscore(todo)}_factory.rb"
+          factory_out = JSON2Ruby::FactoryWriter.to_code(todo, self.dep_graph, 0, options)
+          if File.exists?(filename) && !options[:forceoverwrite]
+            $stderr.puts "File #{filename} exists. Use -f to overwrite."
+          else
+            File.write(filename, factory_out)
+            files += 1
+          end
         end
+
       end
 
       # Done

@@ -21,10 +21,34 @@ module JSON2Ruby
     end
 
     # Create a new Entity with the specified name and optional Hash of attributes (String name to Entity, Collection or Primitive instances)
-    def initialize(name, attributes = {})
+    def initialize(name, attributes = {},check_dupe=true)
       @name = name
       @attributes = attributes
 
+
+      md5 = Digest::MD5.new
+      md5.update @name
+
+      existing_object = @@objs[md5.hexdigest]
+
+      if existing_object && @name == existing_object.name
+
+        # puts existing_object.attributes.keys.to_json if @name == "Address"
+        attrs = {}
+
+        @attributes.keys.each do |key|
+          # puts key if @name == "Address"
+          attrs[key] = @attributes[key].dup
+        end
+
+        existing_object.attributes.keys.each do |key|
+          # puts key if @name == "Address"
+          attrs[key] = existing_object.attributes[key]
+        end
+
+
+        @attributes = attrs
+      end
     end
 
     # Return a 128-bit hash as a hex string, representative of the unique set of fields and their types, including all subobjects.
@@ -33,6 +57,17 @@ module JSON2Ruby
       md5 = Digest::MD5.new
       # just hash it by name
       md5.update @name
+      #
+      # @attributes.each do |k,v|
+      #   md5.update "#{k}:#{v.attr_hash}"
+      # end
+      md5.hexdigest
+    end
+
+    def self.get_md5(name)
+      md5 = Digest::MD5.new
+      # just hash it by name
+      md5.update name
 
       # @attributes.each do |k,v|
       #   md5.update "#{k}:#{v.attr_hash}"
@@ -47,7 +82,15 @@ module JSON2Ruby
     # i.e. in short, an entity is equal to another entity if and only if both +attr_hash+ calls return the same value.
     def ==(other)
       return false if other.class != self.class
-      attr_hash == other.attr_hash
+      hash_attr_diff(self) == hash_attr_diff(other)
+    end
+
+    def hash_attr_diff(ent)
+      md5 = Digest::MD5.new
+      ent.ttributes.each do |k,v|
+        md5.update "#{k}:#{v.attr_hash}"
+      end
+      mds5.hexdigest
     end
 
     # Reset the internal type cache for all Entities everywhere, and reset the global Unknown number.
@@ -71,6 +114,7 @@ module JSON2Ruby
       verts = dag.vertices.select{|v| v.payload[:name] == name}
       e = verts.blank? ? dag.add_vertex({name: name, md5: md5.hexdigest}) : verts.first
 
+
       e
     end
 
@@ -79,28 +123,24 @@ module JSON2Ruby
     # * :forcenumeric => true - Use RUBYNUMERIC instead of RUBYINTEGER / RUBYFLOAT.
     #
     # Note: Contained JSON Objects and Arrays will be recursively parsed into Entity and Collection instances.
-    def self.parse_from(name, obj_hash, dag,options = {})
-      ob = self.new(name)
+    def self.parse_from(name, obj_hash, dag,options = {},check_dupe=false)
+      ob = self.new(name,{},check_dupe)
+
       obj_hash.each do |k,v|
 
         orig = k
         k = k.gsub(/[^A-Za-z0-9_]/, "_")
 
         if v.kind_of?(Array)
-
-
           v1 = self.find_v(dag,name,[])
           v2 = self.find_v(dag,k,[])
-
-
           begin
-            dag.add_edge from: v1, to: v2
+            dag.add_edge from: v1, to: v2, properties: {type: 'has_many'}
           rescue
 
           end
 
           att = Collection.parse_from(k, v, dag, options)
-
         elsif v.kind_of?(String)
           att = RUBYSTRING
         elsif v.kind_of?(Integer) && !options[:forcenumeric]
@@ -112,20 +152,14 @@ module JSON2Ruby
         elsif !!v==v
           att = RUBYBOOLEAN
         elsif v.kind_of?(Hash)
-
-
-          v_keys = v.keys
-
           v1 = self.find_v(dag, name, [])
           v2 = self.find_v(dag,k, [])
-
           begin
-            dag.add_edge from: v1, to: v2
+            dag.add_edge from: v1, to: v2, properties: {type: 'has_one'}
           rescue
-
           end
 
-          att = self.parse_from(k, v, dag,options)
+          att = self.parse_from(k, v, dag,options, false)
         elsif v==nil
           att = RUBYNIL
         end
@@ -135,16 +169,8 @@ module JSON2Ruby
       end
 
       x = ob.attr_hash
-      if @@objs.has_key?(x)
-        # merge previous attr hashes
-        existing_object = @@objs[x]
-        existing_object.attributes.merge!(ob.attributes)
-
-        return @@objs[x]
-      else
-        @@objs[x] = ob
-        return ob
-      end
+      @@objs[x] = ob
+      return ob
 
     end
 

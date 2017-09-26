@@ -55,24 +55,16 @@ module JSON2Ruby
     # * :namespace - String, the namespace of the type classes in the format 'Module::SubModule'...
     def self.attributes_to_ruby(entity, indent = 0, options = {})
 
-
-      foo = []
-      entity.attributes.each do |k,v|
-        foo << k
-      end
-
-
       ident = (' '*indent)
       x = "#{ident}attr_accessor "
 
       attrs = []
-      entity.attributes.each do |k,v|
+      # puts entity.attributes.keys
 
-        attr_name = k.underscore
+      entity.attributes.keys.each do |key|
 
-        if !attrs.include? ":#{attr_name}"
-          attrs << ":#{attr_name}"
-        end
+        attr_name = key.underscore
+        attrs << ":#{attr_name}"
 
       end
 
