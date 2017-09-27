@@ -130,7 +130,7 @@ module JSON2Ruby
                   end
 
                 elsif v[:relation] == "has_one" && !v[:relational_attrs].blank?
-                  factory_str = "#{key.underscore} = #{key.camelcase}Factory.build(args[:#{key.underscore}]) if args[:#{key.underscore}]"
+                  factory_str = "#{key.underscore} = #{key.camelcase}Factory.build(args[:#{key}]) if args[:#{key}]"
                   needed_factories << factory_str if !needed_factories.include?(factory_str)
                   factory_keys << key.underscore
                   all_keys << key
@@ -162,7 +162,7 @@ module JSON2Ruby
       x += "#{" "*2*indent}#{needed_factory_string}\r\n"
 
       for attr in non_fact_keys do
-        x += "#{" "*2*indent}#{attr.underscore} = args[:#{attr.underscore}]\r\n" if !factory_keys.include? attr.underscore
+        x += "#{" "*2*indent}#{attr.underscore} = args[:#{attr}]\r\n" if !factory_keys.include? attr.underscore
       end
       x += "#{" "*2*indent}#{create_string}\r\n"
 
@@ -190,7 +190,7 @@ module JSON2Ruby
           attr_string += "\r\n#{' '*constructor.size}"
           curr = ''
         end
-        attr_string += "#{str.underscore} = args[:#{str.underscore}]" + "\r\n"
+        attr_string += "#{str.underscore} = args[:#{str}]" + "\r\n"
 
       end
 
