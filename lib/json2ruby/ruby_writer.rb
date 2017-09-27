@@ -62,7 +62,7 @@ module JSON2Ruby
       attrs = []
       # puts entity.attributes.keys
 
-      entity.attributes.keys.each do |key|
+      entity.attributes.each do |key,v|
 
         attr_name = key.underscore
         attrs << ":#{attr_name}"

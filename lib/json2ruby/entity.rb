@@ -24,31 +24,6 @@ module JSON2Ruby
     def initialize(name, attributes = {},check_dupe=true)
       @name = name
       @attributes = attributes
-
-
-      md5 = Digest::MD5.new
-      md5.update @name
-
-      existing_object = @@objs[md5.hexdigest]
-
-      if existing_object && @name == existing_object.name
-
-        # puts existing_object.attributes.keys.to_json if @name == "Address"
-        attrs = {}
-
-        @attributes.keys.each do |key|
-          # puts key if @name == "Address"
-          attrs[key] = @attributes[key].dup
-        end
-
-        existing_object.attributes.keys.each do |key|
-          # puts key if @name == "Address"
-          attrs[key] = existing_object.attributes[key]
-        end
-
-
-        @attributes = attrs
-      end
     end
 
     # Return a 128-bit hash as a hex string, representative of the unique set of fields and their types, including all subobjects.
@@ -131,6 +106,7 @@ module JSON2Ruby
         orig = k
         k = k.gsub(/[^A-Za-z0-9_]/, "_")
 
+        puts k
         if v.kind_of?(Array)
           v1 = self.find_v(dag,name,[])
           v2 = self.find_v(dag,k,[])
@@ -168,6 +144,25 @@ module JSON2Ruby
         ob.attributes[k] = att
       end
 
+
+      md5 = Digest::MD5.new
+      md5.update ob.name
+
+      existing_object = @@objs[md5.hexdigest]
+
+      if existing_object
+
+        attrs = {}
+
+        ob.attributes.keys.each do |key|
+          attrs[key] = ob.attributes[key].dup
+        end
+
+        existing_object.attributes.keys.each do |key|
+          attrs[key] = existing_object.attributes[key]
+        end
+        ob.attributes = attrs
+      end
       x = ob.attr_hash
       @@objs[x] = ob
       return ob
