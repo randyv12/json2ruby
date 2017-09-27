@@ -7,6 +7,15 @@ module JSON2Ruby
   # The RubyWriter class contains methods to output ruby code from a given Entity.
   class FactoryWriter
 
+
+
+    PRIMS = ['0123456789ABCDEF0123456789ABCDEF',
+    '0123456789ABCDEF0123456789ABCDE0',
+    '0123456789ABCDEF0123456789ABCDE1',
+    '0123456789ABCDEF0123456789ABCDE2',
+    '0123456789ABCDEF0123456789ABCDE3',
+    '0123456789ABCDEF0123456789ABCDE4']
+
     def self.to_do
       @@TODO ||= []
     end
@@ -18,35 +27,11 @@ module JSON2Ruby
       JSON2Ruby::Entity.entities.keys.each do |k|
 
         is_string = JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Collection) && JSON2Ruby::Entity.entities[k].ruby_types.keys.include?("0123456789ABCDEF0123456789ABCDEF")
+        is_an_array_of_primitives = JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Collection) && JSON2Ruby::Entity.entities[k].ruby_types.keys.reduce(true) {|sofar, e| sofar && PRIMS.include?(e)}
 
-        todos << JSON2Ruby::Entity.entities[k].name if (!JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Primitive) && !is_string)
+        todos << JSON2Ruby::Entity.entities[k].name if (!JSON2Ruby::Entity.entities[k].is_a?(JSON2Ruby::Primitive) && !is_string && !is_an_array_of_primitives)
 
       end
-
-      # return if !dependency_graph[entity]
-      # dependency_graph[entity].each do |ent, v|
-      #
-      #   if v.is_a?(JSON2Ruby::Collection) && v[:relation]
-      #
-      #     v[:relational_attrs].each do |rr, v|
-      #       if !v.is_a?(JSON2Ruby::Primitive)
-      #
-      #         todos << rr
-      #         self.digest(rr, dependency_graph)
-      #       end
-      #
-      #     end
-      #   end
-      #
-      #
-      #   if v.is_a?(JSON2Ruby::Entity) && v[:relation]
-      #
-      #     todos << rr
-      #     self.digest(ent, dependency_graph)
-      #
-      #   end
-      # end
-
 
       todos
     end
