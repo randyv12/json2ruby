@@ -102,7 +102,7 @@ module JSON2Ruby
         attr_name = k
 
         if !attrs.include? "#{attr_name}"
-          attrs << "#{attr_name}:"
+          attrs << attr_name
         end
 
         non_fact_keys << k
@@ -123,14 +123,14 @@ module JSON2Ruby
                 if v[:relation] == "has_many"
 
                   if !v[:relational_attrs].blank?
-                    factory_str = "#{key.underscore} = #{key}.map{|item| #{key.camelcase}Factory.build(item)}"
+                    factory_str = "#{key.underscore} = [*args[:#{key}]].map{|item| #{key.camelcase}Factory.build(item)}"
                     needed_factories << factory_str if !needed_factories.include?(factory_str)
                     factory_keys << key.underscore
                     all_keys << key
                   end
 
                 elsif v[:relation] == "has_one" && !v[:relational_attrs].blank?
-                  factory_str = "#{key.underscore} = #{key.camelcase}Factory.build(#{key})"
+                  factory_str = "#{key.underscore} = #{key.camelcase}Factory.build(args[:#{key.underscore}]) if args[:#{key.underscore}]"
                   needed_factories << factory_str if !needed_factories.include?(factory_str)
                   factory_keys << key.underscore
                   all_keys << key
@@ -153,15 +153,16 @@ module JSON2Ruby
       attr_string = self.apply_margins(attrs, x)
       needed_factory_string = needed_factories.to_a.join("\r\n#{" "*2*indent}")
 
-      x += attr_string
-
+      x += 'args'
 
       x += ")"
       x += "\r\n"
+
+      #x += attr_string
       x += "#{" "*2*indent}#{needed_factory_string}\r\n"
 
       for attr in non_fact_keys do
-        x += "#{" "*2*indent}#{attr.underscore} = #{attr}\r\n" if !factory_keys.include? attr.underscore
+        x += "#{" "*2*indent}#{attr.underscore} = args[:#{attr.underscore}]\r\n" if !factory_keys.include? attr.underscore
       end
       x += "#{" "*2*indent}#{create_string}\r\n"
 
@@ -189,7 +190,7 @@ module JSON2Ruby
           attr_string += "\r\n#{' '*constructor.size}"
           curr = ''
         end
-        attr_string += str + ', '
+        attr_string += "#{str.underscore} = args[:#{str.underscore}]" + "\r\n"
 
       end
 
