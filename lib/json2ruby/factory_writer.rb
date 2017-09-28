@@ -108,14 +108,14 @@ module JSON2Ruby
                 if v[:relation] == "has_many"
 
                   if !v[:relational_attrs].blank?
-                    factory_str = "#{key.underscore} = [*args[:#{key}]].map{|item| #{key.camelcase}Factory.build(item)}"
+                    factory_str = "#{" "*(2+indent)}#{key.underscore} = [*args[:#{key}]].map{|item| #{key.camelcase}Factory.build(item)}"
                     needed_factories << factory_str if !needed_factories.include?(factory_str)
                     factory_keys << key.underscore
                     all_keys << key
                   end
 
                 elsif v[:relation] == "has_one" && !v[:relational_attrs].blank?
-                  factory_str = "#{key.underscore} = #{key.camelcase}Factory.build(args[:#{key}]) if args[:#{key}]"
+                  factory_str = "#{" "*(2+indent)}#{key.underscore} = #{key.camelcase}Factory.build(args[:#{key}]) if args[:#{key}]"
                   needed_factories << factory_str if !needed_factories.include?(factory_str)
                   factory_keys << key.underscore
                   all_keys << key
@@ -134,9 +134,9 @@ module JSON2Ruby
       all_keys.uniq!
 
 
-      create_string = "#{entity.camelcase}.new(#{self.create_stuff(all_keys, factory_keys).join(",")}\r\n#{" "*4})"
+      create_string = "#{entity.camelcase}.new(#{self.create_stuff(all_keys, factory_keys, indent).join(",")}\r\n#{" "*(2+indent)})"
       attr_string = self.apply_margins(attrs, x)
-      needed_factory_string = needed_factories.to_a.join("\r\n#{" "*2*indent}")
+      needed_factory_string = needed_factories.to_a.join("\r\n")
 
       x += 'args'
 
@@ -144,22 +144,22 @@ module JSON2Ruby
       x += "\r\n"
 
       #x += attr_string
-      x += "#{" "*2*indent}#{needed_factory_string}\r\n"
+      x += "#{needed_factory_string}\r\n"
 
       for attr in non_fact_keys do
-        x += "#{" "*2*indent}#{attr.underscore} = args[:#{attr}]\r\n" if !factory_keys.include? attr.underscore
+        x += "#{" "*(2+indent)}#{attr.underscore} = args[:#{attr}]\r\n" if !factory_keys.include? attr.underscore
       end
-      x += "#{" "*2*indent}#{create_string}\r\n"
+      x += "#{" "*(2+indent)}#{create_string}\r\n"
 
       x += "\r\n#{" "*indent}end"
       x += "\r\n"
       x
     end
 
-    def self.create_stuff(keys, factory_keys)
+    def self.create_stuff(keys, factory_keys, indent)
       f = []
       for key in keys do
-        f << "\r\n#{" "*6}#{key.underscore}:#{key.underscore}"
+        f << "\r\n#{" "*(4+indent)}#{key.underscore}:#{key.underscore}"
 
       end
       f
